@@ -83,6 +83,75 @@
             color: var(--text-color);
             margin-bottom: 5px;
         }
+        
+        /* تنسيقات قسم رفع التاسكات الجديدة */
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            margin-bottom: 20px;
+        }
+        .upload-form input[type="text"],
+        .upload-form input[type="file"] {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background-color: #1e293b;
+            color: var(--text-color);
+        }
+        .upload-form button {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .upload-form button:hover {
+            opacity: 0.9;
+        }
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0f172a;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            margin-bottom: 10px;
+        }
+        .task-info h4 {
+            color: var(--text-color);
+            margin-bottom: 3px;
+        }
+        .task-info span {
+            font-size: 0.85rem;
+            color: var(--secondary-text);
+        }
+        .task-actions a {
+            background-color: #1e293b;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            font-size: 0.9rem;
+        }
+        .task-actions button {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-size: 0.9rem;
+        }
+
         footer {
             text-align: center;
             color: var(--secondary-text);
@@ -141,6 +210,20 @@
             </ul>
         </section>
 
+        <!-- قسم رفع التاسكات (جديد) -->
+        <section>
+            <h2>إدارة ورفع التاسكات (Tasks Upload)</h2>
+            <div class="upload-form">
+                <input type="text" id="taskTitle" placeholder="اسم التاسك أو المشروع (مثال: تاسك الهياكل البيانات)">
+                <input type="file" id="taskFile">
+                <button onclick="uploadTask()">رفع التاسك</button>
+            </div>
+            
+            <div id="tasksContainer">
+                <!-- سيتم عرض التاسكات المرفوعة هنا تلقائياً -->
+            </div>
+        </section>
+
         <!-- وسائل التواصل -->
         <section>
             <h2>تواصل معي</h2>
@@ -152,5 +235,87 @@
         </footer>
     </div>
 
+    <!-- كود الـ JavaScript لتشغيل الرفع والتخزين المحلي -->
+    <script>
+        document.addEventListener('DOMContentLoaded', loadTasks);
+
+        function uploadTask() {
+            const titleInput = document.getElementById('taskTitle');
+            const fileInput = document.getElementById('taskFile');
+            
+            if (!titleInput.value.trim() || fileInput.files.length === 0) {
+                alert('الرجاء كتابة اسم التاسك واختيار الملف أولاً!');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const fileData = {
+                    id: Date.now(),
+                    title: titleInput.value,
+                    fileName: file.name,
+                    fileUrl: e.target.result // حفظ الملف كـ Base64 ليعمل محلياً
+                };
+
+                saveTaskToStorage(fileData);
+                renderTasks();
+
+                // تفريغ الحقول بعد الرفع
+                titleInput.value = '';
+                fileInput.value = '';
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function getTasksFromStorage() {
+            return JSON.parse(localStorage.getItem('portfolioTasks')) || [];
+        }
+
+        function saveTaskToStorage(task) {
+            const tasks = getTasksFromStorage();
+            tasks.push(task);
+            localStorage.setItem('portfolioTasks', JSON.stringify(tasks));
+        }
+
+        function deleteTask(id) {
+            let tasks = getTasksFromStorage();
+            tasks = tasks.filter(task => task.id !== id);
+            localStorage.setItem('portfolioTasks', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            const tasks = getTasksFromStorage();
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<p style="color: var(--secondary-text); text-align: center;">لا توجد تاسكات مرفوعة حتى الآن.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            tasks.forEach(task => {
+                container.innerHTML += `
+                    <div class="task-item">
+                        <div class="task-info">
+                            <h4>${task.title}</h4>
+                            <span>الملف: ${task.fileName}</span>
+                        </div>
+                        <div class="task-actions">
+                            <button onclick="deleteTask(${task.id})">حذف</button>
+                            <a href="${task.fileUrl}" download="${task.fileName}" target="_blank">تحميل / معاينة</a>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function loadTasks() {
+            renderTasks();
+        }
+    </script>
 </body>
 </html>
